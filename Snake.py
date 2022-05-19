@@ -4,9 +4,10 @@ from random import randint
 from time import time
 
 # Game Settings
-WIDTH = 600
-HEIGHT = 400
-TILESIZE = 10
+FACTOR = 2 # must be Inteager
+WIDTH = 600 * FACTOR
+HEIGHT = 400 * FACTOR
+TILESIZE = 10 * FACTOR
 FPS = 30
 GAMEOVER = False
 PAUSE = False
@@ -18,9 +19,9 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 # pygame.mouse.set_visible(False)
 
-def debug(message, pos=(5, 5), color=(255, 255, 255), size=10, centered = False):
+def debug(message, pos=(TILESIZE//2, TILESIZE//2), color=(255, 255, 255), size=TILESIZE, centered = False):
     """Function that render a given message to screen (usefull for debug ingame)"""
-    font = pygame.font.SysFont("liberationserif", size)
+    font = pygame.font.SysFont("liberationserif", size*FACTOR)
     text = font.render(str(message), True, color)
     if centered:
         center = [WIDTH//2-text.get_width()//2, HEIGHT//2-text.get_height()//2]
@@ -41,7 +42,7 @@ DIRECTIONS = {"DOWN": (0, TILESIZE),
               "RIGHT":(TILESIZE, 0)
               }
 cur_direction, new_direction = "RIGHT", "RIGHT"
-snake = [(130, 80), (120, 80), (110, 80)]
+snake = [(120+TILESIZE, 80), (120, 80), (120-TILESIZE, 80)]
 apple = new_apple()
 eaten = False
 level = 1
@@ -56,7 +57,7 @@ while True:
         if event.type == pygame.QUIT:  # if the user close the Window
             pygame.quit()
             exit()
-        if event.type == pygame.KEYDOWN:
+        if event.type == pygame.KEYDOWN and not GAMEOVER:
             if event.key == pygame.K_LEFT and cur_direction != "RIGHT":
                 new_direction = "LEFT"
             if event.key == pygame.K_RIGHT and cur_direction != "LEFT":
@@ -66,12 +67,25 @@ while True:
             if event.key == pygame.K_UP and cur_direction != "DOWN":
                 new_direction = "UP"
 
+            if event.key == pygame.K_p:
+                PAUSE = not(PAUSE)
+
+        if event.type == pygame.KEYUP and GAMEOVER:
+            INTERVAL = 0.6 # time wait until next locomotion
+            cur_direction, new_direction = "RIGHT", "RIGHT"
+            snake = [(130, 80), (120, 80), (110, 80)]
+            apple = new_apple()
+            eaten = False
+            level = 1
+            previousTime = time()
+            GAMEOVER = False
+
     if not GAMEOVER:
         if not PAUSE:
             # Clear all (fill black) at begin of draw
             screen.fill("black")
             # draw apple
-            pRect(screen, (255, 0, 0), (apple[0], apple[1], TILESIZE, TILESIZE), border_radius=5)
+            pRect(screen, (255, 0, 0), (apple[0], apple[1], TILESIZE, TILESIZE), border_radius=TILESIZE//2)
             for e in snake: # draw snake
                 pRect(screen, (0, 255, 0), (e[0], e[1], TILESIZE, TILESIZE), border_radius=2)
 
@@ -102,7 +116,12 @@ while True:
                 previousTime = time()
 
             debug(f"{round(clock.get_fps())} fps")
-            debug(f"Level {level}", pos=(5, 20))
+            debug(f"Level {level}", pos=(TILESIZE//2, TILESIZE//2+TILESIZE*FACTOR))
 
-            pygame.display.update()
-            clock.tick(FPS)
+        else:
+            # show Pause-Screen
+            screen.fill("black")
+            debug("Press P again to resume")
+            debug("GAME PAUSED", size=40, centered = True)
+        pygame.display.update()
+        clock.tick(FPS)
